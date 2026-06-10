@@ -1,0 +1,72 @@
+---
+title: "Building BLADEFALL: every prompt and every bug"
+description: "A 3D top-down arena fighter built in one Claude Code session — the prompts used, the bugs we hit (including a game that restarted itself), and how each one was fixed."
+date: "2026-06-10"
+category: "Build Log"
+tags:
+  - threejs
+  - claude-code
+  - gamedev
+  - nextjs
+published: true
+game: "/claude-fable-game"
+gameLabel: "Play BLADEFALL"
+---
+
+BLADEFALL is a 3D top-down arena fighter — three levels, four enemy types, a three-phase boss, procedural sound, and zero downloaded assets. It was built in a single Claude Code session. This is the short, honest build log: the exact prompts, and the problems we hit along the way.
+
+**[▶ Play the game](/claude-fable-game)** — WASD to move, F or click to attack, Space to dodge.
+
+## The prompts
+
+Five prompts (lightly edited for grammar):
+
+**1. The whole game in one prompt:**
+
+> "Make a really good 3D fighting game, top-down. Use whatever tech you want — Three.js or anything else — with proper sound, loading screens, levels, and so on. Make sure the game is playable, the enemies are smart, and it's fun, with proper feedback effects."
+
+That produced the entire first version: Three.js renderer, procedural humanoid characters, WebAudio-synthesized sound and music (no audio files), enemy AI with an attack-token system so enemies take turns instead of mobbing, hit-stop, screen shake, damage numbers, loading screen, three themed arenas, and a boss.
+
+**2. Bug report from playtesting:**
+
+> "There are some issues: the WASD controls are janky (I tried it), and the game sometimes restarts on its own."
+
+**3. Ergonomics:**
+
+> "The keys are too far from each other — pressing K while playing is hard. Fix it."
+
+**4. The port:**
+
+> "Now turn this into a Next.js project and keep the game at the page /claude-fable-game."
+
+**5. This post:**
+
+> "See how we write blogs in ../aireels — we need a similar blog for this site at /blog."
+
+## The problems we faced
+
+**Enemy attacks crashed the game.** The enemy state machine called `this.executeAttack()` — a method that was never written. Every enemy windup threw a `TypeError`. Caught immediately because Claude ran the game in a real browser after writing it and read the console, instead of assuming the code worked.
+
+**Wave 2 never spawned.** A classic closure bug: `setTimeout(() => startWave(G.wave + 1))` read `G.wave` *after* it had been set to a guard value of `-99`. Captured the next wave number in a local constant before scheduling.
+
+**The game restarted itself (part 1).** After clicking "Enter the Arena", the button silently kept keyboard focus — so pressing Space to dodge *re-clicked the button* and restarted the run. Buttons now blur themselves on click.
+
+**The game restarted itself (part 2).** Even after that fix, hidden menu buttons were still reachable with Tab — and Tab sits directly above W. Tab then Space activated an invisible "Restart Level" button. Fix: Tab is swallowed, buttons are removed from the tab order, and every button is state-guarded so "Retry" physically cannot fire unless you're on the death screen.
+
+**The ghost player.** Mid-session, the game appeared to be playing itself — level 3 reached with zero input. Claude spent a while debugging stacking contexts before realizing the human was playing the game in the same browser window the tests were running in. Lesson: agents and humans sharing one browser is chaos.
+
+**Janky WASD.** Two causes: movement acceleration used a slow exponential lerp (~a third of a second to reach full speed), and attacks locked you in place for their full recovery. Fixes: ~3× snappier acceleration, faster stops, and "move-cancel" — holding a direction cancels the back half of an attack's recovery. Also: keys no longer stick when the window loses focus.
+
+**K was too far away.** Light attack moved to **F**, heavy to **E** — both reachable without leaving WASD. Mouse-only also works (left click light, right click heavy).
+
+**React StrictMode ran the game twice.** In the Next.js port, dev-mode StrictMode mounts every component twice — which means two renderers, two audio engines, two input handlers. The game module now returns a proper `destroy()` that cancels the animation frame, clears every timeout, removes every listener, and closes the AudioContext. Verified: exactly one canvas after mount.
+
+## The stack
+
+- **Next.js 15** (App Router) — game at `/claude-fable-game`, this blog at `/blogs`
+- **Three.js** — characters, arenas, and effects are all procedural geometry
+- **WebAudio** — every sound effect and the music are synthesized at runtime; the repo contains no asset files at all
+
+Every fix above was verified by actually playing the game in a browser (via Playwright) — clicking Start, dispatching real key events, and asserting on game state — not by re-reading the code and hoping.
+
+**[▶ Play BLADEFALL](/claude-fable-game)**

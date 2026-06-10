@@ -1,0 +1,83 @@
+:root{
+  --hp:#ff4d5e; --hp2:#ff8b4d; --gold:#ffd166; --cyan:#6ee7ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#07080c;
+  font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;color:#e8e8f0}
+canvas{display:block}
+#app{position:fixed;inset:0}
+body.hide-cursor, body.hide-cursor *{cursor:none!important}
+
+/* ---------- overlays ---------- */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 35%, #11131d 0%, #07080c 70%);z-index:30;transition:opacity .4s}
+.screen.hidden{opacity:0;pointer-events:none}
+.title{font-size:clamp(48px,9vw,110px);font-weight:800;letter-spacing:.18em;color:#fff;
+  text-shadow:0 0 24px rgba(110,231,255,.55),0 0 80px rgba(110,231,255,.25);margin-bottom:6px}
+.subtitle{letter-spacing:.5em;color:#8b93b0;font-size:14px;margin-bottom:48px;text-transform:uppercase}
+.btn{background:linear-gradient(180deg,#1b2233,#121624);border:1px solid #38415e;color:#e8ecff;
+  font-size:18px;letter-spacing:.25em;padding:14px 54px;margin:8px;cursor:pointer;border-radius:4px;
+  text-transform:uppercase;transition:all .15s;font-family:inherit}
+.btn:hover{border-color:var(--cyan);color:#fff;box-shadow:0 0 18px rgba(110,231,255,.35);transform:translateY(-1px)}
+.controls-hint{margin-top:42px;color:#69718f;font-size:13px;line-height:2;text-align:center;letter-spacing:.08em}
+.controls-hint b{color:#aeb6d4;background:#1a1f30;padding:2px 8px;border-radius:3px;border:1px solid #2d3450;font-weight:600}
+
+/* ---------- loading ---------- */
+#loadbar-wrap{width:min(420px,70vw);height:6px;background:#161a28;border-radius:3px;overflow:hidden;margin-top:30px;border:1px solid #232a40}
+#loadbar{height:100%;width:0%;background:linear-gradient(90deg,#2f6bff,var(--cyan));transition:width .25s;border-radius:3px}
+#loadtext{margin-top:14px;color:#69718f;font-size:13px;letter-spacing:.2em;text-transform:uppercase}
+#loadtip{margin-top:46px;color:#4d5470;font-size:13px;font-style:italic;max-width:440px;text-align:center}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10;opacity:0;transition:opacity .4s}
+#hud.on{opacity:1}
+#hp-wrap{position:fixed;left:26px;bottom:26px;width:min(330px,40vw)}
+#hp-label{font-size:11px;letter-spacing:.3em;color:#8b93b0;margin-bottom:6px;text-transform:uppercase}
+#hp-outer{height:18px;background:rgba(10,12,20,.8);border:1px solid #333b58;border-radius:3px;padding:2px}
+#hp-fill{height:100%;width:100%;border-radius:2px;background:linear-gradient(90deg,var(--hp),var(--hp2));transition:width .12s}
+#hp-ghost{position:relative;top:-12px;height:12px;margin:0 2px;background:rgba(255,255,255,.35);border-radius:2px;transition:width .6s ease-out;pointer-events:none}
+#stats{position:fixed;right:26px;top:22px;text-align:right}
+#score{font-size:26px;font-weight:700;color:var(--gold);letter-spacing:.08em;text-shadow:0 0 12px rgba(255,209,102,.3)}
+#wave-label{font-size:12px;letter-spacing:.3em;color:#8b93b0;margin-top:4px;text-transform:uppercase}
+#combo{position:fixed;right:26px;top:88px;font-size:30px;font-weight:800;color:var(--cyan);letter-spacing:.06em;
+  text-shadow:0 0 16px rgba(110,231,255,.5);opacity:0;transform:scale(.8);transition:opacity .2s}
+#combo.show{opacity:1}
+#hint{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);color:#69718f;font-size:12px;letter-spacing:.15em;white-space:nowrap}
+#hint b{color:#aeb6d4}
+#mute-ind{position:fixed;left:26px;top:22px;color:#555d7c;font-size:11px;letter-spacing:.25em}
+
+/* boss bar */
+#bossbar{position:fixed;top:30px;left:50%;transform:translateX(-50%);width:min(560px,70vw);display:none}
+#bossbar.on{display:block}
+#boss-name{text-align:center;font-size:13px;letter-spacing:.45em;color:#ff9d9d;margin-bottom:6px;text-transform:uppercase;text-shadow:0 0 12px rgba(255,77,94,.5)}
+#boss-outer{height:12px;background:rgba(10,12,20,.85);border:1px solid #5e3340;border-radius:3px;padding:2px}
+#boss-fill{height:100%;width:100%;border-radius:2px;background:linear-gradient(90deg,#c61f3a,#ff7a4d);transition:width .15s}
+
+/* enemy bars / floating text */
+.ebar{position:fixed;width:46px;height:5px;background:rgba(8,10,16,.8);border:1px solid rgba(80,90,130,.6);
+  border-radius:2px;pointer-events:none;z-index:9;margin-left:-23px}
+.ebar i{display:block;height:100%;background:linear-gradient(90deg,#ff4d5e,#ff8b4d);border-radius:1px}
+.dmg{position:fixed;pointer-events:none;z-index:11;font-weight:800;font-size:20px;color:#fff;
+  text-shadow:0 2px 4px rgba(0,0,0,.8),0 0 10px rgba(255,255,255,.3);animation:floatUp .8s ease-out forwards;letter-spacing:.02em}
+.dmg.big{font-size:30px;color:var(--gold)}
+.dmg.hurt{color:var(--hp);font-size:24px}
+.dmg.heal{color:#7dff9b}
+@keyframes floatUp{0%{transform:translate(-50%,0) scale(.6);opacity:0}12%{opacity:1;transform:translate(-50%,-14px) scale(1.15)}
+  100%{transform:translate(-50%,-58px) scale(.95);opacity:0}}
+
+/* banners */
+#banner{position:fixed;top:34%;left:0;right:0;text-align:center;pointer-events:none;z-index:20;opacity:0;transition:opacity .3s}
+#banner.show{opacity:1}
+#banner-main{font-size:clamp(34px,6vw,64px);font-weight:800;letter-spacing:.3em;color:#fff;text-shadow:0 0 30px rgba(110,231,255,.5)}
+#banner-sub{font-size:15px;letter-spacing:.5em;color:#8b93b0;margin-top:10px;text-transform:uppercase}
+
+/* screen fx */
+#flash{position:fixed;inset:0;pointer-events:none;z-index:15;background:radial-gradient(ellipse at center,transparent 35%,rgba(255,30,50,.45) 100%);opacity:0}
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)}
+#lowhp{position:fixed;inset:0;pointer-events:none;z-index:14;background:radial-gradient(ellipse at center,transparent 45%,rgba(200,20,40,.35) 100%);opacity:0;transition:opacity .5s}
+
+.stat-line{color:#8b93b0;font-size:16px;letter-spacing:.2em;margin:6px 0}
+.stat-line b{color:var(--gold);font-weight:700}
+.death-title{color:var(--hp)!important;text-shadow:0 0 24px rgba(255,77,94,.6),0 0 80px rgba(255,77,94,.3)!important}
+.win-title{color:var(--gold)!important;text-shadow:0 0 24px rgba(255,209,102,.6),0 0 80px rgba(255,209,102,.3)!important}
+.menu-spacer{height:26px}
