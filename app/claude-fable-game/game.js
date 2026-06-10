@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import posthog from 'posthog-js';
 
 /* ============================================================
    BLADEFALL — game module.
@@ -1107,6 +1108,11 @@ function onWaveCleared(){
     G.wave=-99;
     AudioSys.jingle(G.level===LEVELS.length-1);
     if(G.level+1<LEVELS.length){
+      posthog.capture('level_cleared', {
+        level: G.level + 1,
+        level_name: THEMES[L.theme].name,
+        score: G.score,
+      });
       showBanner('LEVEL CLEAR','PREPARE YOURSELF',1.8);
       Music.stop();
       sto(()=>{ if(G.state==='playing') startLevel(G.level+1,false); },2300);
@@ -1144,6 +1150,12 @@ function showDeath(){
   G.state='dead';
   el('dead-score').textContent=G.score;
   el('dead-level').textContent='LEVEL '+(G.level+1)+' — '+THEMES[LEVELS[G.level].theme].name;
+  posthog.capture('game_over', {
+    score: G.score,
+    level: G.level + 1,
+    level_name: THEMES[LEVELS[G.level].theme].name,
+    best_combo: G.bestCombo,
+  });
   showScreen('screen-dead');
 }
 function showWin(){
@@ -1151,6 +1163,10 @@ function showWin(){
   Music.stop();
   el('win-score').textContent=G.score;
   el('win-combo').textContent=G.bestCombo+'×';
+  posthog.capture('game_won', {
+    final_score: G.score,
+    best_combo: G.bestCombo,
+  });
   showScreen('screen-win');
   el('hud').classList.remove('on');
 }
@@ -1208,11 +1224,11 @@ function bindBtn(id,states,fn){
     AudioSys.init(); AudioSys.resume(); AudioSys.ui(); fn();
   });
 }
-bindBtn('btn-start',['title'],()=>{ G.score=0; G.combo=0; G.bestCombo=0; el('score').textContent='0'; startLevel(0,true); });
+bindBtn('btn-start',['title'],()=>{ G.score=0; G.combo=0; G.bestCombo=0; el('score').textContent='0'; posthog.capture('game_started'); startLevel(0,true); });
 bindBtn('btn-resume',['paused'],()=>{ G.state='playing'; hideScreens(); });
-bindBtn('btn-retry-pause',['paused'],()=>{ startLevel(G.level,true); });
-bindBtn('btn-quit',['paused'],()=>toTitle());
-bindBtn('btn-retry',['dead'],()=>{ startLevel(G.level,true); });
+bindBtn('btn-retry-pause',['paused'],()=>{ posthog.capture('game_retried', { from_pause: true, level: G.level + 1, score: G.score }); startLevel(G.level,true); });
+bindBtn('btn-quit',['paused'],()=>{ posthog.capture('game_quit_to_menu', { level: G.level + 1, score: G.score }); toTitle(); });
+bindBtn('btn-retry',['dead'],()=>{ posthog.capture('game_retried', { from_pause: false, level: G.level + 1, score: G.score }); startLevel(G.level,true); });
 bindBtn('btn-dead-menu',['dead'],()=>toTitle());
 bindBtn('btn-again',['win'],()=>{ G.score=0; G.combo=0; G.bestCombo=0; el('score').textContent='0'; startLevel(0,true); });
 bindBtn('btn-win-menu',['win'],()=>toTitle());

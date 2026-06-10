@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { compileMDX } from 'next-mdx-remote/rsc';
 import { getAllPosts, getPostBySlug, formatDate } from '../../../lib/blog';
 import '../blog.css';
+import PostHogBlogTracker from './PostHogBlogTracker';
 
 export async function generateStaticParams() {
   return getAllPosts().map((p) => ({ slug: p.slug }));
@@ -29,6 +30,11 @@ export default async function BlogPostPage({ params }) {
 
   return (
     <div className="blog-root">
+      <PostHogBlogTracker
+        slug={slug}
+        title={post.frontmatter.title}
+        category={post.frontmatter.category}
+      />
       <div className="blog-wrap">
         <header className="blog-top">
           <a className="blog-brand" href="/">GYANENDRA SINGH</a>
